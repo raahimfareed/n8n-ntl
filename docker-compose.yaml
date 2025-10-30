@@ -37,6 +37,7 @@ services:
       - N8N_METRICS=true
       - N8N_SECURE_COOKIE=${N8N_SECURE_COOKIE}
       - N8N_PROXY_HOPS=${N8N_PROXY_HOPS}
+      - N8N_MAX_FILE_SIZE=50mb
     volumes:
       - ./n8n-data:/home/node/.n8n
       - /var/www/taskhabs-api:/var/www/taskhabs-api
