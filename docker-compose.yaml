@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: n8n-pgsql
     restart: unless-stopped
     environment:
@@ -9,11 +9,20 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+        - n8n-internal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 256m
 
   n8n:
     image: n8nio/n8n
@@ -30,21 +39,40 @@ services:
       - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
       - N8N_HOST=${N8N_HOST}
       - N8N_PORT=5678
-      - N8N_PROTOCOL=http
+      - N8N_PROTOCOL=${N8N_PROTOCOL}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
       - WEBHOOK_URL=${WEBHOOK_URL}
       - EXECUTIONS_TIMEOUT=${EXECUTIONS_TIMEOUT}
       - EXECUTIONS_PROCESS=${EXECUTIONS_PROCESS}
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=336
       - N8N_METRICS=true
       - N8N_SECURE_COOKIE=${N8N_SECURE_COOKIE}
       - N8N_PROXY_HOPS=${N8N_PROXY_HOPS}
       - N8N_MAX_FILE_SIZE=64mb
       - N8N_PAYLOAD_SIZE_MAX=64
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - NODE_ENV=production
+      - GENERIC_TIMEZONE=${TIMEZONE}
+      - TZ=${TIMEZONE}
     volumes:
-      - ./n8n-data:/home/node/.n8n
-      - /var/www/taskhabs-api:/var/www/taskhabs-api
+      - n8n_data:/home/node/.n8n
+    networks:
+      - n8n-internal
     depends_on:
       postgres:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 512m
+
+networks:
+  n8n-internal:
+    driver: bridge
 
 volumes:
   postgres_data:
+  n8n_data:
