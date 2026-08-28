@@ -1,2 +1,4 @@
 .env
 n8n-data/
+backup/*.dump
+backup/*.sql
